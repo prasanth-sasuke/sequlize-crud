@@ -46,21 +46,9 @@ module.exports.getAddressById = async (req, res, next) => {
     });
 
         if (results.length > 0) {
-            res.status(200).json({ message: "Success", result: results });
+           return res.status(200).json({ message: "Success", result: results });
         } else {
-            res.status(404).json({ message: "children not found!" });
-        }
-        if (!children) {
-            res.status(404).json({
-                message: "Address not found!"
-            })
-        } else {
-
-
-            res.status(200).json({
-                message: "Success",
-                result: children
-            })
+           return res.status(404).json({ message: "children not found!" });
         }
 
     } catch (err) {

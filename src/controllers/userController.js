@@ -1,26 +1,28 @@
-const {Parent,Children,Address} = require('../models/associations');
+const { Parent, Children, Address } = require('../models/associations');
+const sequelize = require('../config/database.js');
+const { json } = require('sequelize');
 //get all users
 module.exports.getParent = async (req, res, next) => {
   try {
-    let user = await Parent.findAll({
-      where: {
-        status: 'active'
-      },
-      include:[Children,Address]
-    })
-    if (user.length > 0) {
-      res.status(200).json({
-        message: "Success",
-        result: user
-      })
-    } else {
-      res.status(404).json({
-        message: "User not found!"
-      })
-    }
+    const query = `
+      SELECT
+        p.id as parent_id,
+        p.name as parent_name,
+        c.id, c.name as child_name,
+        a.id, a.city
+      FROM parents p
+    LEFT JOIN children c ON p.id = c."parentId"
+  LEFT JOIN addresses a ON p.id = a."parentId"
+  WHERE p.status = 'active'
+    `;
+
+    const [results, metadata] = await sequelize.query(query, { raw: true });
+    console.log(results);
+    return res.json(results)
+  
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Something went wrong!' });
+    res.status(500).json({ err });
   }
 }
 
@@ -31,9 +33,26 @@ module.exports.getParentById = async (req, res, next) => {
     if (!userId) {
       return res.status(400).json({ message: 'User id required!' });
     }
-    let user = await Parent.findByPk(userId, {
-      include:[Children,Address]
-    })
+    const query = `
+      SELECT
+        p.*,
+        c.id AS child_id,
+        c.name AS child_name,
+        a.id AS address_id,
+        a.city
+      FROM parents p
+      LEFT JOIN children c ON p.id = c."parentId"
+      LEFT JOIN addresses a ON p.id = a."parentId"
+      WHERE p.id = :userId
+      ORDER BY p.id, c.id, a.id;
+    `;
+
+    const [results, metadata] = await sequelize.query(query, {
+      replacements: { userId },
+      raw: true
+    });
+
+    return res.json({results})
     if (!user) {
       res.status(404).json({
         message: "User not found!"

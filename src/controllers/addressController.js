@@ -1,27 +1,21 @@
 const {Parent,Address,Children} = require('../models/associations');
-
+const sequelize = require('../config/database')
 module.exports.getAddress = async (req, res, next) => {
     try {
-        let children = await Address.findAll({
-            where: {
-                status: 'active'
-            },
-            include:[
-                {
-                    model:Parent,
-                    include:[Children]
-                }
-            ]
-        })
-        if (children.length > 0) {
-            res.status(200).json({
-                message: "Success",
-                result: children
-            })
+        let query = `
+            SELECT a.id AS address_id,a.city,a.state,a."parentId",p.id AS parent_id,p.name AS parent_name,p.email AS parent_email,c.id AS child_id,c.name AS child_name, c.email AS child_email,c."parentId" AS child_parentId
+            FROM addresses a
+            LEFT JOIN parents p ON a."parentId" = p.id
+            LEFT JOIN children c ON p.id = c."parentId"
+            WHERE a.status = 'active'
+            ORDER BY a.id, c.id;
+        `
+        const [results, metadata] = await sequelize.query(query);
+
+        if (results.length > 0) {
+            res.status(200).json({ message: "Success", result: results });
         } else {
-            res.status(404).json({
-                message: "children not found!"
-            })
+            res.status(404).json({ message: "children not found!" });
         }
     } catch (err) {
         console.error(err);
@@ -29,23 +23,33 @@ module.exports.getAddress = async (req, res, next) => {
     }
 }
 
+
 module.exports.getAddressById = async (req, res, next) => {
     try {
         const id = req.query.id;
         if (!id) {
             return res.status(400).json({ message: 'Id required!' });
         }
-        let children = await Address.findByPk(id,
-            {
-                include:[
-                    {
-                        model:Parent,
-                        include:[Children]
-                    }
-                ]
-           
-            }
-        );
+      let query = `
+            SELECT a.id AS address_id,a.city,a.state,a."parentId",p.id AS parent_id,p.name AS parent_name,p.email AS parent_email,c.id AS child_id,c.name AS child_name, c.email AS child_email,c."parentId" AS child_parentId
+            FROM addresses a
+            LEFT JOIN parents p ON a."parentId" = p.id
+            LEFT JOIN children c ON p.id = c."parentId"
+            WHERE a.id = :id AND a.status = 'active'
+            ORDER BY a.id, c.id
+            
+            ;
+        `
+        const [results, metadata] = await sequelize.query(query,{
+      replacements: { id },
+      raw: true
+    });
+
+        if (results.length > 0) {
+            res.status(200).json({ message: "Success", result: results });
+        } else {
+            res.status(404).json({ message: "children not found!" });
+        }
         if (!children) {
             res.status(404).json({
                 message: "Address not found!"

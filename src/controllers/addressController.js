@@ -27,6 +27,9 @@ module.exports.getAddress = async (req, res, next) => {
 module.exports.getAddressById = async (req, res, next) => {
     try {
         const id = req.query.id;
+        const limit = parseInt(req.query.limit) || 1;
+        const page = parseInt(req.query.page) || 1;
+        const offset = (page - 1) * limit;
         if (!id) {
             return res.status(400).json({ message: 'Id required!' });
         }
@@ -37,16 +40,15 @@ module.exports.getAddressById = async (req, res, next) => {
             LEFT JOIN children c ON p.id = c."parentId"
             WHERE a.id = :id AND a.status = 'active'
             ORDER BY a.id, c.id
-            
-            ;
-        `
-        const [results, metadata] = await sequelize.query(query,{
-      replacements: { id },
+            LIMIT :limit OFFSET :offset;
+            ;`
+        const results = await sequelize.query(query,{
+      replacements: { id , limit, offset},
       raw: true
     });
 
         if (results.length > 0) {
-           return res.status(200).json({ message: "Success", result: results });
+           return res.status(200).json({ message: "Success", result: results[0] });
         } else {
            return res.status(404).json({ message: "children not found!" });
         }

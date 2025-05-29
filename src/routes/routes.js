@@ -1,6 +1,7 @@
 const userController = require('../controllers/userController.js');
 const childrenController = require('../controllers/childController');
 const addressController = require('../controllers/addressController');
+const productController = require('../controllers/productController.js')
 const router = require('express').Router();
 
 
@@ -34,5 +35,6 @@ router.put('/update-address',addressController.updateAddress);
 
 router.delete('/delete-address',addressController.deleteAddress);
 
+router.get('/pagenation',productController.pageNation);
 
 module.exports = router;
